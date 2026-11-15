@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phrasomètre : connexion Google</title>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F5F7F6;color:#171D1C;font-family:"Segoe UI",system-ui,sans-serif}
+  .c{background:#fff;border:1px solid #C4CCCA;border-radius:28px;padding:40px 44px;max-width:420px;text-align:center;box-shadow:0 12px 40px rgba(14,107,104,.12)}
+  h1{margin:14px 0 6px;font-size:22px;color:#0E6B68} p{margin:0 0 22px;color:#3F4948;line-height:1.5}
+  button{display:inline-flex;align-items:center;gap:12px;height:44px;padding:0 22px;border-radius:22px;background:#fff;color:#1F1F1F;border:1px solid #747775;font:500 15px Roboto,"Segoe UI",sans-serif;cursor:pointer}
+  button:hover{box-shadow:0 1px 3px rgba(60,64,67,.3);background:#F8FAFD} button:disabled{opacity:.6;cursor:default}
+  #msg{margin-top:18px;font-size:14px;color:#BA1A1A;min-height:1.3em}
+  svg.g{width:20px;height:20px}
+</style>
+</head>
+<body>
+<div class="c">
+  <svg width="56" height="56" viewBox="0 0 108 108"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12857F"/><stop offset="1" stop-color="#083F3D"/></linearGradient></defs><rect x="4" y="4" width="100" height="100" rx="26" fill="url(#lg)"/><path fill="#fff" d="M36,30H72A8,8 0 0 1 80,38V62A8,8 0 0 1 72,70H54L44,80V70H36A8,8 0 0 1 28,62V38A8,8 0 0 1 36,30Z"/><path d="M42,41V59M50,41V59M58,41V59M66,41V59" stroke="#0B5C59" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M37,57L71,43" stroke="#F2A33A" stroke-width="4" stroke-linecap="round" fill="none"/></svg>
+  <h1>Phrasomètre</h1>
+  <p>Connectez-vous avec votre compte Google pour synchroniser vos données avec l'application Windows.</p>
+  <button id="btn"><svg class="g" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>Se connecter avec Google</span></button>
+  <div id="msg"></div>
+</div>
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+  import { getAuth, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+
+  const app = initializeApp({
+    apiKey: 'AIzaSyDAUeZyO_C10N_hNkAON-es-H_G8Gm8hmo',
+    authDomain: 'phrasometre.firebaseapp.com',
+    projectId: 'phrasometre'
+  });
+  const auth = getAuth(app);
+  const q = new URLSearchParams(location.search);
+  const port = q.get('port');
+  const state = q.get('state');
+  const btn = document.getElementById('btn');
+  const msg = document.getElementById('msg');
+
+  if (port !== '8765' || !state) {
+    btn.disabled = true;
+    msg.textContent = "Ouvrez cette page depuis l'application Phrasomètre.";
+  }
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true; msg.textContent = '';
+    try {
+      const res = await signInWithPopup(auth, new GoogleAuthProvider());
+      const cred = GoogleAuthProvider.credentialFromResult(res);
+      if (!cred || !cred.idToken) throw new Error('Jeton Google introuvable');
+      location.href = 'http://127.0.0.1:' + port + '/callback?state=' + encodeURIComponent(state) +
+        '&id_token=' + encodeURIComponent(cred.idToken);
+    } catch (e) {
+      btn.disabled = false;
+      msg.textContent = 'Échec : ' + (e.code || e.message);
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+{
+  "name": "phrasometre",
+  "version": "1.0.0",
+  "description": "Phrasomètre : compteur de phrases mensuelles, synchronisé avec Google",
+  "author": "Sitraka Nambinintsoa",
+  "main": "main.js",
+  "scripts": {
+    "build:ui": "node scripts/build-ui.js",
+    "start": "npm run build:ui && electron .",
+    "dist": "npm run build:ui && electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.24.0",
+    "firebase": "^10.14.1"
+  },
+  "build": {
+    "appId": "mg.sitraka.phrasometre",
+    "productName": "Phrasomètre",
+    "executableName": "Phrasometre",
+    "copyright": "© 2026 Sitraka Nambinintsoa",
+    "directories": { "output": "release", "buildResources": "build" },
+    "files": ["main.js", "preload.js", "config.json", "renderer/**/*", "assets/**/*"],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "build/icon.ico",
+      "artifactName": "Phrasometre-Setup-${version}.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Phrasomètre",
+      "uninstallDisplayName": "Phrasomètre",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "language": "1036"
+    }
+  }
+}
