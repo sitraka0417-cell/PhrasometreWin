@@ -1,0 +1,15 @@
+{
+  "authPage": "https://sitraka0417-cell.github.io/PhrasometreWin/",
+  "firebase": {
+    "apiKey": "AIzaSyDAUeZyO_C10N_hNkAON-es-H_G8Gm8hmo",
+    "authDomain": "phrasometre.firebaseapp.com",
+    "projectId": "phrasometre",
+    "storageBucket": "phrasometre.firebasestorage.app",
+    "messagingSenderId": "733060738530",
+    "appId": "1:733060738530:android:ef7ffa4bb16700b38f9dbb"
+  },
+  "google": {
+    "clientId": "733060738530-rbsigilhmpr45uvhubtp0bvjoc6f89en.apps.googleusercontent.com",
+    "clientSecret": "A_REMPLIR"
+  }
+}
