@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Télécharger Phrasomètre pour Windows</title>
+<style>
+  :root{--teal:#0E6B68;--bg:#F5F7F6;--ink:#171D1C;--mut:#3F4948;--line:#C4CCCA}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,sans-serif;line-height:1.5}
+  header{background:linear-gradient(135deg,#12857F,#083F3D);color:#fff;padding:56px 20px 88px;text-align:center}
+  header svg{width:84px;height:84px} h1{margin:14px 0 6px;font-size:2rem;letter-spacing:-.02em} header p{margin:0;opacity:.9;font-size:1.05rem}
+  main{max-width:720px;margin:-52px auto 48px;padding:0 20px}
+  .carte{background:#fff;border:1px solid var(--line);border-radius:28px;padding:30px;box-shadow:0 12px 40px rgba(14,107,104,.12);text-align:center}
+  .btn{display:inline-flex;align-items:center;gap:10px;background:var(--teal);color:#fff;text-decoration:none;font-weight:700;font-size:1.1rem;padding:16px 30px;border-radius:32px;transition:filter .15s,transform .05s}
+  .btn:hover{filter:brightness(1.12)} .btn:active{transform:scale(.98)}
+  .meta{margin-top:12px;color:var(--mut);font-size:.9rem;min-height:1.4em}
+  h2{font-size:1.1rem;margin:30px 0 8px;text-align:left} ol{text-align:left;margin:0;padding-left:22px;color:var(--mut)} li{margin:6px 0}
+  .note{margin-top:22px;text-align:left;background:#FFF4E0;border:1px solid #F0D3A0;border-radius:16px;padding:14px 16px;color:#5A3A00;font-size:.92rem}
+  footer{text-align:center;color:var(--mut);font-size:.85rem;padding-bottom:36px} footer a{color:var(--teal)}
+</style>
+</head>
+<body>
+<header>
+  <svg viewBox="0 0 108 108" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1FA59E"/><stop offset="1" stop-color="#0A524F"/></linearGradient></defs><rect x="4" y="4" width="100" height="100" rx="26" fill="url(#g)"/><path fill="#fff" d="M36,30H72A8,8 0 0 1 80,38V62A8,8 0 0 1 72,70H54L44,80V70H36A8,8 0 0 1 28,62V38A8,8 0 0 1 36,30Z"/><path d="M42,41V59M50,41V59M58,41V59M66,41V59" stroke="#0B5C59" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M37,57L71,43" stroke="#F2A33A" stroke-width="4" stroke-linecap="round" fill="none"/></svg>
+  <h1>Phrasomètre</h1>
+  <p>Compteur de phrases mensuelles pour Windows, synchronisé avec votre compte Google.</p>
+</header>
+<main>
+  <div class="carte">
+    <a id="dl" class="btn" href="https://github.com/sitraka0417-cell/PhrasometreWin/releases/latest/download/Phrasometre-Setup.exe">⬇ Télécharger pour Windows</a>
+    <div class="meta" id="meta">Windows 10 et 11 (64 bits)</div>
+    <h2>Installation</h2>
+    <ol>
+      <li>Téléchargez puis lancez <b>Phrasometre-Setup.exe</b>.</li>
+      <li>Suivez l'assistant (choix du dossier, raccourcis).</li>
+      <li>Ouvrez Phrasomètre et, si vous le souhaitez, connectez-vous avec Google pour synchroniser vos données.</li>
+    </ol>
+    <h2>Mise à jour</h2>
+    <ol><li>Relancez simplement le nouvel installateur : vos phrases et vos réglages sont conservés.</li></ol>
+    <div class="note"><b>Message de Windows ?</b> Si « Windows a protégé votre ordinateur » apparaît, cliquez sur <b>Informations complémentaires</b>, puis <b>Exécuter quand même</b>. L'application n'est pas encore signée numériquement.</div>
+  </div>
+</main>
+<footer>© 2026 Sitraka Nambinintsoa · <a href="https://github.com/sitraka0417-cell/PhrasometreWin/releases/latest">Toutes les versions</a></footer>
+<script>
+  fetch('https://api.github.com/repos/sitraka0417-cell/PhrasometreWin/releases/latest')
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(j => {
+      const a = (j.assets || []).find(x => /\.exe$/i.test(x.name));
+      const mo = a ? (a.size / 1048576).toFixed(0) + ' Mo' : '';
+      const d = new Date(j.published_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+      document.getElementById('meta').textContent = 'Version ' + String(j.tag_name).replace(/^v/, '') + (mo ? ' · ' + mo : '') + ' · publiée le ' + d;
+      if (a) document.getElementById('dl').href = a.browser_download_url;
+    })
+    .catch(() => {});
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
   "name": "phrasometre",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Phrasomètre : compteur de phrases mensuelles, synchronisé avec Google",
   "author": "Sitraka Nambinintsoa",
   "main": "main.js",
@@ -25,7 +25,7 @@
     "win": {
       "target": [{ "target": "nsis", "arch": ["x64"] }],
       "icon": "build/icon.ico",
-      "artifactName": "Phrasometre-Setup-${version}.exe"
+      "artifactName": "Phrasometre-Setup.exe"
     },
     "nsis": {
       "oneClick": false,

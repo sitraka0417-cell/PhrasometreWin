@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -23,7 +26,25 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
+      - name: Lire la version
+        id: v
+        shell: bash
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
       - uses: actions/upload-artifact@v4
         with:
           name: Phrasometre-Windows-Setup
-          path: release/*.exe
+          path: release/Phrasometre-Setup.exe
+
+      - name: Publier la version (lien de téléchargement public)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.v.outputs.version }}
+          name: Phrasomètre ${{ steps.v.outputs.version }}
+          make_latest: true
+          files: release/Phrasometre-Setup.exe
+          body: |
+            Installateur Windows de Phrasomètre.
+            1. Téléchargez Phrasometre-Setup.exe et lancez-le.
+            2. Si Windows affiche « Windows a protégé votre ordinateur » : Informations complémentaires, puis Exécuter quand même.
+            3. Pour mettre à jour, relancez simplement le nouvel installateur : vos données sont conservées.
