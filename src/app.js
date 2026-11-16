@@ -3,11 +3,12 @@ import { GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged }
 import { depot, MAX_DEFAUT } from './data.js';
 import * as S from './stats.js';
 import { ico, LOGO, GOOGLE_G } from './icons.js';
+import * as PIN from './pin.js';
 
 const natif = window.natif || {
   googleLogin: async () => ({ ok: false, erreur: 'HORS_ELECTRON' }),
   sauverFichier: async () => ({ ok: false }), exporterPdf: async () => ({ ok: false }),
-  notifier: async () => {}, options: async () => {}, barreTitre: async () => {}, version: async () => '1.0.0'
+  notifier: async () => {}, options: async () => {}, barreTitre: async () => {}, version: async () => '1.1.0', surMasquage: () => {}
 };
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -19,7 +20,8 @@ const plur = (n, a, b) => (n > 1 ? b : a);
 const CLE_REGLAGES = 'phrasometre.reglages';
 const DEFAUT = {
   theme: 'auto', echelle: 1, rappelActif: false, rappelHeure: '20:00',
-  zoneNotification: false, demarrage: false, bandeauMasque: false, dernierRappel: ''
+  zoneNotification: false, demarrage: false, bandeauMasque: false, dernierRappel: '',
+  verrouInactivite: 0, verrouMasquage: true
 };
 function chargerReglages() {
   try { return { ...DEFAUT, ...JSON.parse(localStorage.getItem(CLE_REGLAGES) || '{}') }; } catch (e) { return { ...DEFAUT }; }
@@ -35,6 +37,7 @@ const E = {
   brouillon: '',
   dernier: null,
   menuExport: false,
+  verrou: PIN.actif(),
   stats: { periode: 'MOIS', mode: 'PHRASES', ancre: new Date(), moisSel: new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), filtre: null },
   reglages: chargerReglages()
 };
@@ -316,6 +319,12 @@ function ecranReglages() {
     <section class="carte"><h2>Rappel quotidien</h2>
       ${interrupteur('bell', 'Me rappeler de compter', "Notification Windows si aucun clic n'a été fait aujourd'hui (l'application doit rester ouverte ou réduite dans la zone de notification).", 'rappel', r.rappelActif)}
       ${r.rappelActif ? `<div class="reglage"><div class="txt"><div class="titre">Heure du rappel</div></div><input class="champ" type="time" data-change="rappel-heure" value="${r.rappelHeure}"></div>` : ''}</section>
+    <section class="carte"><h2>Sécurité</h2>
+      ${interrupteur('lock', 'Verrouiller avec un code PIN', "Le code est demandé à l'ouverture et après verrouillage (Ctrl+L).", 'pin', PIN.actif())}
+      ${PIN.actif() ? `<div class="reglage"><div class="txt"><div class="titre">Verrouiller après inactivité</div></div>
+        <select class="champ" style="width:170px" data-change="verrou-inactivite">${[[0, 'Jamais'], [1, '1 minute'], [5, '5 minutes'], [15, '15 minutes'], [30, '30 minutes']].map(([v, l]) => `<option value="${v}" ${r.verrouInactivite === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        ${interrupteur('lock', 'Verrouiller quand la fenêtre est réduite', 'Aussi au verrouillage de la session Windows.', 'verrou-masquage', r.verrouMasquage)}
+        <div class="rangee" style="margin-top:8px"><button class="btn contour" data-action="pin-changer">Changer le code</button><button class="btn contour" data-action="verrouiller">Verrouiller maintenant</button></div>` : ''}</section>
     <section class="carte"><h2>Windows</h2>
       ${interrupteur('power', 'Lancer au démarrage de Windows', '', 'demarrage', r.demarrage)}
       ${interrupteur('download', 'Réduire dans la zone de notification', "À la fermeture, l'application continue en arrière-plan (utile pour le rappel).", 'zone', r.zoneNotification)}</section>
@@ -340,7 +349,7 @@ function rendreNav() {
   const items = [['accueil', 'home'], ['saisie', 'edit'], ['stats', 'chart'], ['reglages', 'sliders']];
   $('#nav').innerHTML = `<div class="marque">${LOGO}<div><div class="marque-nom">Phrasomètre</div><div class="marque-sous">Compteur de phrases</div></div></div>
     ${items.map(([k, i]) => `<button class="nav-item ${E.ecran === k ? 'actif' : ''}" data-action="nav" data-ecran="${k}">${ico(i)}<span>${TITRES[k]}</span></button>`).join('')}
-    <div class="nav-bas">${compteHtml()}</div>`;
+    <div class="nav-bas">${PIN.actif() ? `<button class="nav-item" data-action="verrouiller" title="Ctrl+L">${ico('lock')}<span>Verrouiller</span></button>` : ''}${compteHtml()}</div>`;
 }
 
 function rendreTopbar() {
@@ -480,6 +489,11 @@ const ACTIONS = {
     if (id) toast(`+1 sur « ${p.texte} »`, { action: 'Annuler', duree: 10000, onAction: () => depot.annulerClic(id) });
   },
   connexion: () => connecterGoogle(),
+  verrouiller: () => verrouiller(),
+  'pin-touche': (d) => entrerTouche(d.t),
+  'pin-eff': () => effacerTouche(),
+  'pin-oubli': () => pinOublie(),
+  'pin-changer': () => changerPin(),
   'plus-tard': () => { E.reglages.bandeauMasque = true; sauverReglages(); rendreContenu(); },
   max: (d) => depot.definirMax(E.moisSaisie, depot.maxDuGroupe(E.moisSaisie) + Number(d.delta)),
   'max-saisie': () => {
@@ -595,6 +609,7 @@ document.addEventListener('click', (e) => {
 document.addEventListener('input', (e) => {
   const t = e.target;
   if (t.id === 'nouvelle-phrase') E.brouillon = t.value;
+  if (t.id && t.id.startsWith('pin-')) t.value = t.value.replace(/\D/g, '').slice(0, 8);
   if (t.dataset && t.dataset.input === 'echelle') {
     E.reglages.echelle = parseFloat(t.value);
     sauverReglages();
@@ -604,14 +619,24 @@ document.addEventListener('input', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
+  if (E.verrou && !$('#modal-root').firstChild) {
+    if (/^[0-9]$/.test(e.key)) entrerTouche(e.key);
+    else if (e.key === 'Backspace') effacerTouche();
+    e.preventDefault(); e.stopPropagation();
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') { e.preventDefault(); verrouiller(); return; }
   if (e.key === 'Enter' && e.target.id === 'nouvelle-phrase') { e.preventDefault(); ajouterDepuisChamp(); }
-});
+}, true);
 
 document.addEventListener('change', (e) => {
   const t = e.target;
   const c = t.dataset && t.dataset.change;
   if (!c) return;
   const r = E.reglages;
+  if (c === 'pin') { if (t.checked) creerPin(); else desactiverPin(); rendreContenu(); return; }
+  if (c === 'verrou-inactivite') r.verrouInactivite = parseInt(t.value, 10) || 0;
+  if (c === 'verrou-masquage') r.verrouMasquage = t.checked;
   if (c === 'rappel') r.rappelActif = t.checked;
   else if (c === 'rappel-heure') r.rappelHeure = t.value || '20:00';
   else if (c === 'demarrage') r.demarrage = t.checked;
@@ -620,6 +645,148 @@ document.addEventListener('change', (e) => {
   synchroniserOptions();
   rendreContenu();
 });
+
+// ───────── Verrouillage par code PIN ─────────
+const V = { saisie: '', erreur: false, echecs: 0, blocage: 0, verifie: false };
+let derniereActivite = Date.now();
+
+function htmlVerrou() {
+  const L = PIN.longueur();
+  const bloque = V.blocage > Date.now();
+  const reste = Math.max(0, Math.ceil((V.blocage - Date.now()) / 1000));
+  const msg = bloque ? `Trop d'essais. Réessayez dans ${reste} s` : V.erreur ? 'Code incorrect' : 'Entrez votre code PIN';
+  const pts = Array.from({ length: L }, (_, i) => `<i class="pt ${V.erreur ? 'err' : i < V.saisie.length ? 'plein' : ''}"></i>`).join('');
+  const touches = ['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((t) => `<button class="touche" data-action="pin-touche" data-t="${t}">${t}</button>`).join('');
+  return `<div class="verrou-carte">${LOGO}<h1>Phrasomètre</h1><p class="${bloque || V.erreur ? 'neg' : ''}">${msg}</p>
+    <div class="points ${V.erreur ? 'secoue' : ''}">${pts}</div>
+    <div class="clavier">${touches}<span></span><button class="touche" data-action="pin-touche" data-t="0">0</button><button class="touche" data-action="pin-eff" aria-label="Effacer">⌫</button></div>
+    <button class="btn texte" data-action="pin-oubli">Code oublié ?</button></div>`;
+}
+
+function afficherVerrou() {
+  const v = $('#verrou');
+  const app = document.querySelector('.app');
+  if (E.verrou) { v.hidden = false; app.inert = true; v.innerHTML = htmlVerrou(); }
+  else { v.hidden = true; v.innerHTML = ''; app.inert = false; }
+}
+
+function verrouiller() {
+  if (!PIN.actif() || E.verrou) return;
+  E.verrou = true; V.saisie = ''; V.erreur = false;
+  $('#modal-root').innerHTML = ''; $('#toasts').innerHTML = '';
+  afficherVerrou();
+}
+
+async function entrerTouche(t) {
+  if (!E.verrou || V.verifie || V.erreur || V.blocage > Date.now()) return;
+  const L = PIN.longueur();
+  if (V.saisie.length >= L) return;
+  V.saisie += t;
+  afficherVerrou();
+  if (V.saisie.length < L) return;
+  V.verifie = true;
+  const ok = await PIN.verifier(V.saisie);
+  V.verifie = false;
+  if (ok) {
+    V.echecs = 0; V.saisie = ''; V.erreur = false; E.verrou = false; derniereActivite = Date.now();
+    afficherVerrou(); rendreTout();
+  } else {
+    V.echecs++; V.erreur = true;
+    if (V.echecs % 5 === 0) V.blocage = Date.now() + 30000 * (V.echecs / 5);
+    afficherVerrou();
+    setTimeout(() => { V.saisie = ''; V.erreur = false; afficherVerrou(); }, 450);
+  }
+}
+
+function effacerTouche() {
+  if (!E.verrou || V.verifie || V.erreur || V.blocage > Date.now()) return;
+  V.saisie = V.saisie.slice(0, -1);
+  afficherVerrou();
+}
+
+function dialoguePin({ titre, champs, valider }) {
+  const corps = champs.map((c, i) => `<div><label class="etiquette" for="pin-${i}">${esc(c)}</label>
+    <input id="pin-${i}" class="champ" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></div>`).join('') + '<div class="erreur" id="pin-err"></div>';
+  let fermer = () => {};
+  fermer = modal({
+    titre, corps,
+    boutons: [{ libelle: 'Annuler' }, {
+      libelle: 'Valider', classe: 'plein',
+      onClick: (r) => {
+        const v = champs.map((_, i) => r.querySelector(`#pin-${i}`).value.replace(/\D/g, ''));
+        (async () => {
+          const err = await valider(v);
+          if (err) { const e = r.querySelector('#pin-err'); if (e) e.textContent = err; }
+          else { fermer(); rendreTout(); }
+        })();
+        return false;
+      }
+    }]
+  });
+}
+
+function creerPin() {
+  dialoguePin({
+    titre: 'Créer un code PIN', champs: ['Nouveau code (4 à 8 chiffres)', 'Confirmer le code'],
+    valider: async (v) => {
+      if (v[0].length < 4 || v[0].length > 8) return 'Le code doit contenir 4 à 8 chiffres.';
+      if (v[0] !== v[1]) return 'Les deux codes sont différents.';
+      await PIN.definir(v[0]); return null;
+    }
+  });
+}
+
+function changerPin() {
+  dialoguePin({
+    titre: 'Changer le code PIN', champs: ['Code actuel', 'Nouveau code (4 à 8 chiffres)', 'Confirmer le nouveau code'],
+    valider: async (v) => {
+      if (!(await PIN.verifier(v[0]))) return 'Code actuel incorrect.';
+      if (v[1].length < 4 || v[1].length > 8) return 'Le code doit contenir 4 à 8 chiffres.';
+      if (v[1] !== v[2]) return 'Les deux codes sont différents.';
+      await PIN.definir(v[1]); return null;
+    }
+  });
+}
+
+function desactiverPin() {
+  dialoguePin({
+    titre: 'Désactiver le verrouillage', champs: ['Code PIN actuel'],
+    valider: async (v) => {
+      if (!(await PIN.verifier(v[0]))) return 'Code incorrect.';
+      PIN.supprimer(); return null;
+    }
+  });
+}
+
+function pinOublie() {
+  confirmer('Code oublié ?',
+    'Pour retirer le code, vous serez déconnecté et les données enregistrées sur cet ordinateur seront effacées. ' +
+    'Si vous étiez connecté avec Google, elles restent sauvegardées dans votre compte et reviendront à la reconnexion. ' +
+    'Sans compte Google, elles seront définitivement perdues.',
+    'Réinitialiser',
+    async () => {
+      try { await signOut(auth); } catch (e) { /* ignoré */ }
+      depot.deconnecter();
+      PIN.supprimer();
+      E.verrou = false; V.saisie = ''; V.erreur = false; V.echecs = 0; V.blocage = 0;
+      afficherVerrou(); rendreTout();
+      toast('Code PIN réinitialisé. Les données locales ont été effacées.', { duree: 6000 });
+    });
+}
+
+['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart'].forEach((ev) =>
+  document.addEventListener(ev, () => { derniereActivite = Date.now(); }, { passive: true, capture: true }));
+
+setInterval(() => {
+  const m = E.reglages.verrouInactivite;
+  if (m > 0 && PIN.actif() && !E.verrou && Date.now() - derniereActivite > m * 60000) verrouiller();
+}, 10000);
+
+setInterval(() => {
+  if (E.verrou && V.blocage) { afficherVerrou(); if (V.blocage <= Date.now()) V.blocage = 0; }
+}, 500);
+
+natif.surMasquage(() => { if (PIN.actif() && E.reglages.verrouMasquage) verrouiller(); });
 
 // ───────── Rappel quotidien ─────────
 setInterval(() => {
@@ -644,3 +811,4 @@ depot.abonner(() => planifierRendu());
 appliquerTheme();
 synchroniserOptions();
 rendreTout();
+if (E.verrou) afficherVerrou();

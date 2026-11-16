@@ -25,6 +25,7 @@ const ICONES = {
   palette: '<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 1.5-2s0-2 1.5-2h2a3 3 0 0 0 3-3A9 9 0 0 0 12 3z"/><circle cx="8" cy="11" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16" cy="11" r="1"/>',
   text: '<path d="M4 7V5h16v2M12 5v14M9 19h6"/>',
   power: '<path d="M12 3v9M7 6a8 8 0 1 0 10 0"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   logout: '<path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9"/>'
 };
 

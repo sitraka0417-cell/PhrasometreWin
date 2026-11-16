@@ -1,5 +1,5 @@
 const {
-  app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog, shell, Notification, protocol, net
+  app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog, shell, Notification, protocol, net, powerMonitor
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -16,6 +16,8 @@ let quitter = false;
 const options = { fermerZone: false };
 
 app.setAppUserModelId('mg.sitraka.phrasometre');
+// Dossier de données fixe : les mises à jour de l'installateur ne touchent jamais aux données de l'utilisateur
+app.setPath('userData', path.join(app.getPath('appData'), app.getName()));
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }
 ]);
@@ -24,6 +26,10 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => afficher());
+}
+
+function signalerMasquage() {
+  if (fenetre && !fenetre.isDestroyed()) fenetre.webContents.send('fenetre-masquee');
 }
 
 function afficher() {
@@ -61,6 +67,8 @@ function creerFenetre() {
   fenetre.webContents.on('will-navigate', (e, url) => {
     if (!url.startsWith('app://')) e.preventDefault();
   });
+  fenetre.on('minimize', signalerMasquage);
+  fenetre.on('hide', signalerMasquage);
   fenetre.on('close', (e) => {
     if (!quitter && options.fermerZone) {
       e.preventDefault();
@@ -93,6 +101,7 @@ app.whenReady().then(() => {
     return net.fetch(pathToFileURL(complet).toString());
   });
   creerFenetre();
+  powerMonitor.on('lock-screen', signalerMasquage);
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) creerFenetre(); });
 });
 

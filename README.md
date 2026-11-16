@@ -1,18 +1,20 @@
-# Phrasomètre pour Windows
+# Phrasomètre pour Windows (v1.1.0)
 
 Même application que la version Android, même compte Google, mêmes données Firestore (`users/{uid}`).
-Livrée avec un **installateur Windows** (`Phrasometre-Setup-1.0.0.exe`).
+Livrée avec un **installateur Windows** (`Phrasometre-Setup-1.1.0.exe`).
 
-## 1. Configuration (sans code secret)
-La connexion Google passe par une petite page (dossier `docs/`) hébergée sur GitHub Pages.
-1. Envoyer ce projet sur GitHub dans un dépôt nommé **PhrasometreWin**.
-2. GitHub → dépôt → **Settings → Pages** → Source : *Deploy from a branch*, branche `main`, dossier **/docs** → Save.
-   La page sera : `https://sitraka0417-cell.github.io/PhrasometreWin/` (déjà indiquée dans `config.json`, champ `authPage`).
-3. Firebase → **Authentication → Paramètres → Domaines autorisés** → *Ajouter un domaine* : `sitraka0417-cell.github.io`.
+## Mise à jour sans perte de données
+Lancez simplement le nouvel installateur : il remplace l'ancienne version (même dossier).
+Vos phrases, clics, réglages et votre connexion Google sont conservés (ils sont dans `%APPDATA%`, jamais touchés par l'installateur).
 
-## 2. Compiler l'installateur
-1. Envoyer ce dossier sur GitHub.
-2. Onglet **Actions** → « Installateur Windows Phrasomètre » → Run workflow.
-3. Télécharger l'artefact **Phrasometre-Windows-Setup** : le fichier `.exe` est l'installateur.
+## Nouveautés 1.1.0
+- Correction : la liste (Saisie, Statistiques, Paramètres) défile maintenant correctement.
+- Verrouillage par code PIN (4 à 8 chiffres) : Paramètres → Sécurité. Raccourci Ctrl+L.
+- Verrouillage automatique : inactivité, fenêtre réduite, verrouillage de la session Windows.
 
-Test local (Windows) : `npm install` puis `npm start`.
+## Configuration de la connexion Google (déjà faite si la v1.0 fonctionne)
+1. Dépôt GitHub public + GitHub Pages sur le dossier `/docs` (`authPage` dans `config.json`).
+2. Firebase → Authentication → Paramètres → Domaines autorisés : `sitraka0417-cell.github.io`.
+
+## Compiler l'installateur
+GitHub → Actions → « Installateur Windows Phrasomètre » → Run workflow → artefact **Phrasometre-Windows-Setup**.
